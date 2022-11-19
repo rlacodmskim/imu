@@ -1,39 +1,44 @@
 #include <Wire.h>
+#include <Arduino.h>
 
+#define LSB_Sensitivity_R4_2 16384.0
+#define MPU 0x68
+
+float accAngleX, accAngleY, gyroAngleX, gyroAngleY, gyroAngleZ;
+float roll, pitch, yaw;
 float AccErrorX, AccErrorY, GyroErrorX, GyroErrorY, GyroErrorZ;
 float elapsedTime, currentTime, previousTime;
 int c = 0;
 
-
-
-#include <Wire.h>
-
-#define LSB_Sensitivity_R4_2 16384.0
-const int MPU 0x68;
-
 // get raw data
 typedef struct s_accVal{
-	float accX;
-	float accY;
-	float accZ;
+  float accX;
+  float accY;
+  float accZ;
 } t_accVal;
 
 typedef struct s_gyroVal{
-	float gyroX;
-	float gyroY;
-	float gyroZ;
+  float gyroX;
+  float gyroY;
+  float gyroZ;
 } t_gyroVal;
 
-void getAccRaw(t_accVal){  
-  accX = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
-  accY = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
-  accZ = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
-}
+t_accVal getAccRawContinue(){
+  t_accVal ret1;  
+  ret1.accX = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
+  ret1.accY = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
+  ret1.accZ = (Wire.read() << 8 | Wire.read()) / LSB_Sensitivity_R4_2;
 
-void getGyroRaw(t_gyroVal){
-  gyroX = Wire.read() << 8 | Wire.read();
-  gyroY = Wire.read() << 8 | Wire.read();
-  gyroZ = Wire.read() << 8 | Wire.read();
+  return ret1;
+} // ret에 채워 넣은 걸 반환하겠다
+
+t_gyroVal getGyroRawContinue(){
+  t_gyroVal ret2;
+  ret2.gyroX = Wire.read() << 8 | Wire.read();
+  ret2.gyroY = Wire.read() << 8 | Wire.read();
+  ret2.gyroZ = Wire.read() << 8 | Wire.read();
+  
+  return ret2;
 }
 
 // main function imu
@@ -70,11 +75,11 @@ void loop() {
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 6, true); // Read 6 registers total, each axis value is stored in 2 registers
 
-  getAccRaw();
+  t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
   
   // Calculating Roll and Pitch from the accelerometer data
-  accAngleX = fabs((atan(AccY / sqrt(pow(AccX, 2) + pow(AccZ, 2))) * 180 / PI) - 0.58); // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
-  accAngleY = fabs((atan(-1 * AccX / sqrt(pow(AccY, 2) + pow(AccZ, 2))) * 180 / PI) + 1.58); // AccErrorY ~(-1.58)
+  accAngleX = fabs((atan(accVal.accY / sqrt(pow(accVal.accX, 2) + pow(accVal.accZ, 2))) * 180 / PI) - 0.58); // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
+  accAngleY = fabs((atan(-1 * accVal.accX / sqrt(pow(accVal.accY, 2) + pow(accVal.accZ, 2))) * 180 / PI) + 1.58); // AccErrorY ~(-1.58)
 
   // === Read gyroscope data === //
   previousTime = currentTime;        // Previous time is stored before the actual time read
@@ -85,18 +90,18 @@ void loop() {
   Wire.write(0x43); // Gyro data first register address 0x43
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 6, true); // Read 4 registers total, each axis value is stored in 2 registers
-  
-  getGyroRaw();
+
+  t_gyroVal gyroVal = getGyroRawContinue();
 
   // Correct the outputs with the calculated error values
-  GyroX = GyroX + 0.56; // GyroErrorX ~(-0.56)
-  GyroY = GyroY - 2; // GyroErrorY ~(2)
-  GyroZ = GyroZ + 0.79; // GyroErrorZ ~ (-0.8)
+  gyroVal.gyroX = gyroVal.gyroX + 0.56; // GyroErrorX ~(-0.56)
+  gyroVal.gyroY = gyroVal.gyroY - 2; // GyroErrorY ~(2)
+  gyroVal.gyroZ = gyroVal.gyroZ + 0.79; // GyroErrorZ ~ (-0.8)
 
   // Currently the raw values are in degrees per seconds, deg/s, so we need to multiply by sendonds (s) to get the angle in degrees
-  gyroAngleX = gyroAngleX + GyroX * elapsedTime; // deg/s * s = deg
-  gyroAngleY = gyroAngleY + GyroY * elapsedTime; // gyroAngleX = GyroX * elapsedTime; then the movement than the stabilisation
-  yaw =  yaw + GyroZ * elapsedTime;
+  gyroAngleX = gyroAngleX + gyroVal.gyroX * elapsedTime; // deg/s * s = deg
+  gyroAngleY = gyroAngleY + gyroVal.gyroY * elapsedTime; // gyroAngleX = GyroX * elapsedTime; then the movement than the stabilisation
+  yaw =  yaw + gyroVal.gyroZ * elapsedTime;
 
   // Complementary filter - combine acceleromter and gyro angle values
   gyroAngleX = 0.96 * gyroAngleX + 0.04 * accAngleX;
@@ -112,4 +117,3 @@ void loop() {
   Serial.print("/");
   Serial.println(yaw);
 }
-
