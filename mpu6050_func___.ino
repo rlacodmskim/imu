@@ -163,8 +163,8 @@ void loop(){
   t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
   
   // Calculating Roll and Pitch from the accelerometer data
-  accAngleX = fabs((atan(accVal.accY / sqrt(pow(accVal.accX, 2) + pow(accVal.accZ, 2))) * 180 / PI) + AccErrorX); // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
-  accAngleY = fabs((atan(-1 * accVal.accX / sqrt(pow(accVal.accY, 2) + pow(accVal.accZ, 2))) * 180 / PI) + AccErrorY); // AccErrorY ~(-1.58)
+  accAngleX = fabs((atan(accVal.accY / sqrt(pow(accVal.accX, 2) + pow(accVal.accZ, 2))) * 180 / PI) + errVal.AccErrorX); // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
+  accAngleY = fabs((atan(-1 * accVal.accX / sqrt(pow(accVal.accY, 2) + pow(accVal.accZ, 2))) * 180 / PI) + errVal.AccErrorY); // AccErrorY ~(-1.58)
 
   // === Read gyroscope data === //
   previousTime = currentTime;        // Previous time is stored before the actual time read
@@ -179,9 +179,9 @@ void loop(){
   t_gyroVal gyroVal = getGyroRawContinue();
 
   // Correct the outputs with the calculated error values
-  gyroVal.gyroX = gyroVal.gyroX + GyroErrorX; // GyroErrorX ~(-0.56)
-  gyroVal.gyroY = gyroVal.gyroY + GyroErrorY; // GyroErrorY ~(2)
-  gyroVal.gyroZ = gyroVal.gyroZ + GyroErrorZ; // GyroErrorZ ~ (-0.8)
+  gyroVal.gyroX = gyroVal.gyroX + errVal.GyroErrorX; // GyroErrorX ~(-0.56)
+  gyroVal.gyroY = gyroVal.gyroY + errVal.GyroErrorY; // GyroErrorY ~(2)
+  gyroVal.gyroZ = gyroVal.gyroZ + errVal.GyroErrorZ; // GyroErrorZ ~ (-0.8)
 
   // Currently the raw values are in degrees per seconds, deg/s, so we need to multiply by sendonds (s) to get the angle in degrees
   gyroAngleX = gyroAngleX + gyroVal.gyroX * elapsedTime; // deg/s * s = deg
