@@ -159,7 +159,8 @@ void loop(){
   Wire.write(0x3B); // Start with register 0x3B (ACCEL_XOUT_H)
   Wire.endTransmission(false);
   Wire.requestFrom(MPU, 6, true); // Read 6 registers total, each axis value is stored in 2 registers
-
+  
+  t_errVal errVal = getErrVal();
   t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
   
   // Calculating Roll and Pitch from the accelerometer data
