@@ -101,6 +101,8 @@ void calculate_IMU_error() {
   // From here we will get the error values used in the above equations printed on the Serial Monitor.
   // Note that we should place the IMU flat in order to get the proper values, so that we then can the correct values
   // Read accelerometer values 200 times
+  
+  // get calculated error value
   t_errVal errVal = getErrVal();
 
   // Print the error values on the Serial Monitor
