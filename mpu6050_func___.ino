@@ -54,44 +54,44 @@ t_gyroVal getGyroRawContinue(){
 
 t_errVal getErrVal(){
   t_errVal ret3;
-    while (c < 200) {
-      Wire.beginTransmission(MPU);
-      Wire.write(0x3B);
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU, 6, true);
-      t_accVal accVal = getAccRawContinue();
+  while (c < 200) {
+    Wire.beginTransmission(MPU);
+    Wire.write(0x3B);
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU, 6, true);
+    t_accVal accVal = getAccRawContinue();
 
-      // Sum all readings
-      ret3.AccErrorX = ret3.AccErrorX + ((atan((accVal.accY) / sqrt(pow((accVal.accX), 2) + pow((accVal.accZ), 2))) * 180 / PI));
-      ret3.AccErrorY = ret3.AccErrorY + ((atan(-1 * (accVal.accX) / sqrt(pow((accVal.accY), 2) + pow((accVal.accZ), 2))) * 180 / PI));
-      c++;
-    }
+    // Sum all readings
+    ret3.AccErrorX = ret3.AccErrorX + ((atan((accVal.accY) / sqrt(pow((accVal.accX), 2) + pow((accVal.accZ), 2))) * 180 / PI));
+    ret3.AccErrorY = ret3.AccErrorY + ((atan(-1 * (accVal.accX) / sqrt(pow((accVal.accY), 2) + pow((accVal.accZ), 2))) * 180 / PI));
+    c++;
+  }
 
-    //Divide the sum by 200 to get the error value
-    ret3.AccErrorX = ret3.AccErrorX / 200;
-    ret3.AccErrorY = ret3.AccErrorY / 200;
-    c = 0;
+  //Divide the sum by 200 to get the error value
+  ret3.AccErrorX = ret3.AccErrorX / 200;
+  ret3.AccErrorY = ret3.AccErrorY / 200;
+  c = 0;
 
-    // Read gyro values 200 times
-    while (c < 200) {
-      Wire.beginTransmission(MPU);
-      Wire.write(0x43);
-      Wire.endTransmission(false);
-      Wire.requestFrom(MPU, 6, true);
+  // Read gyro values 200 times
+  while (c < 200) {
+    Wire.beginTransmission(MPU);
+    Wire.write(0x43);
+    Wire.endTransmission(false);
+    Wire.requestFrom(MPU, 6, true);
     
-      t_gyroVal gyroVal = getGyroRawContinue();
+    t_gyroVal gyroVal = getGyroRawContinue();
 
-      // Sum all readings
-      ret3.GyroErrorX = ret3.GyroErrorX + gyroVal.gyroX;
-      ret3.GyroErrorY = ret3.GyroErrorY + gyroVal.gyroY;
-      ret3.GyroErrorZ = ret3.GyroErrorZ + gyroVal.gyroZ;
-      c++;
-    }
+    // Sum all readings
+    ret3.GyroErrorX = ret3.GyroErrorX + gyroVal.gyroX;
+    ret3.GyroErrorY = ret3.GyroErrorY + gyroVal.gyroY;
+    ret3.GyroErrorZ = ret3.GyroErrorZ + gyroVal.gyroZ;
+    c++;
+  }
 
-    //Divide the sum by 200 to get the error value
-    ret3.GyroErrorX = ret3.GyroErrorX / 200;
-    ret3.GyroErrorY = ret3.GyroErrorY / 200;
-    ret3.GyroErrorZ = ret3.GyroErrorZ / 200;
+  //Divide the sum by 200 to get the error value
+  ret3.GyroErrorX = ret3.GyroErrorX / 200;
+  ret3.GyroErrorY = ret3.GyroErrorY / 200;
+  ret3.GyroErrorZ = ret3.GyroErrorZ / 200;
   
   return ret3;
 }
