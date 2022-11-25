@@ -149,7 +149,7 @@ void initializeIMU(){
 void setup(){
   Serial.begin(19200);
   Serial.print("Calibration Processing...")
-  ;initializeIMU();  // wire setup
+  initializeIMU();  // wire setup
   Serial.print("Calibration Successed")
   Serial.println("initializing Successed");
   delay(10000)
