@@ -5,6 +5,7 @@
 #define MPU 0x68
 #define cali_sampling_rate 200
 
+long sampling_timer;
 float accAngleX, accAngleY, gyroAngleX, gyroAngleY, gyroAngleZ;
 float elapsedTime, currentTime, previousTime;
 
@@ -127,7 +128,6 @@ void printIMUError(t_errVal errVal) {
 // initializing IMU wire
 void initializeIMU(){
   Serial.println("Calibration Processing...");
-  Wire.begin();                      // Initialize comunication
   Wire.beginTransmission(MPU);       // Start communication with MPU6050 // MPU=0x68
   Wire.write(0x6B);                  // Talk to the register 6B
   Wire.write(0x00);                  // Make reset - place a 0 into the 6B register
@@ -172,7 +172,7 @@ t_angleVal getAngleValue(){
   t_angleVal ret4;
 
   t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
-  t_errVal errVal = calculate_IMU_error();
+  t_errVal errVal = calculate_IMU_error();  // TODO: loop에서 여기까지 계속 가져오니까 문제가 생기는 듯
   
   talkToAccData();
   
@@ -197,22 +197,13 @@ t_angleVal getAngleValue(){
   gyroAngleX = gyroAngleX + gyroVal.gyroX * elapsedTime; // deg/s * s = deg
   gyroAngleY = gyroAngleY + gyroVal.gyroY * elapsedTime; // gyroAngleX = GyroX * elapsedTime; then the movement than the stabilization
 
-  // // Complementary filter - combine acceleromter and gyro angle values
-  // gyroAngleX = 0.96 * gyroAngleX + 0.04 * accAngleX;
-  // gyroAngleY = 0.96 * gyroAngleY + 0.04 * accAngleY;
-
-  // ret4.roll = gyroAngleX;
-  // ret4.pitch = gyroAngleY;
-  // ret4.yaw = ret4.yaw + gyroVal.gyroZ * elapsedTime;
-  // return ret4;
-
-  // === raw angle without filter ===
-  gyroAngleX = 0.04 * accAngleX;
-  gyroAngleY = 0.04 * accAngleY;
+  // Complementary filter - combine acceleromter and gyro angle values
+  gyroAngleX = 0.996 * gyroAngleX + 0.004 * accAngleX;
+  gyroAngleY = 0.996 * gyroAngleY + 0.004 * accAngleY;
 
   ret4.roll = gyroAngleX;
   ret4.pitch = gyroAngleY;
-  ret4.yaw = gyroVal.gyroZ * elapsedTime;
+  ret4.yaw = ret4.yaw + gyroVal.gyroZ * elapsedTime;
   return ret4;
 }
 
@@ -225,10 +216,17 @@ void printAngleVal(t_angleVal angleVal){
   Serial.println(angleVal.yaw);
 }
 
+// sampling clock
+void samplingRate(){
+  while(micros() - sampling_timer < 4000); //
+  sampling_timer = micros(); //Reset the sampling timer  
+}
+
 // main function imu
 
 // imu initializing
 void setup(){
+  Wire.begin();  // Initialize comunication
   Serial.begin(9600);
   initializeIMU();  // wire setup
   delay(100);
@@ -237,7 +235,9 @@ void setup(){
 void loop(){
   t_angleVal angleVal = getAngleValue();
   printAngleVal(angleVal);
+  samplingRate();
 }
 
-//TODO: IMU selfconfig ("sampling rate: 1000"); 설정할 수  있는 값들은  함수로  빼주기
+
 //TODO: low speed and inaccurate value
+//TODO: error value가 갱신됨
