@@ -4,6 +4,7 @@
 #define LSB_Sensitivity_R4_2 16384.0
 #define MPU 0x68
 #define cali_sampling_rate 200
+#define sample 4000
 
 long sampling_timer;
 float accAngleX, accAngleY, gyroAngleX, gyroAngleY, gyroAngleZ;
@@ -168,14 +169,10 @@ void talkToGyroData(){
 }
 
 // calculate angle
-t_angleVal getAngleValue(){
+t_angleVal calAngleValue(t_accVal accVal, t_gyroVal gyroVal, t_errVal errVal){
   t_angleVal ret4;
-
-  t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
-  t_errVal errVal = calculate_IMU_error();  // TODO: loop에서 여기까지 계속 가져오니까 문제가 생기는 듯
   
   talkToAccData();
-  
   // Calculating Roll and Pitch from the accelerometer data
   accAngleX = (atan(accVal.accY / sqrt(pow(accVal.accX, 2) + pow(accVal.accZ, 2))) * 180 / PI) - errVal.AccErrorX; // AccErrorX ~(0.58) See the calculate_IMU_error()custom function for more details
   accAngleY = (atan(-1 * accVal.accX / sqrt(pow(accVal.accY, 2) + pow(accVal.accZ, 2))) * 180 / PI) - errVal.AccErrorY; // AccErrorY ~(-1.58)
@@ -186,7 +183,6 @@ t_angleVal getAngleValue(){
   currentTime = millis();            // Current time actual time read
   elapsedTime = (currentTime - previousTime) / 1000;  // Divide by 1000 to get seconds
 
-  t_gyroVal gyroVal = getGyroRawContinue();
   talkToGyroData();
   // Correct the outputs with the calculated error values
   gyroVal.gyroX = gyroVal.gyroX - errVal.GyroErrorX; // GyroErrorX ~(-0.56)
@@ -218,7 +214,7 @@ void printAngleVal(t_angleVal angleVal){
 
 // sampling clock
 void samplingRate(){
-  while(micros() - sampling_timer < 4000); //
+  while(micros() - sampling_timer < sample); //
   sampling_timer = micros(); //Reset the sampling timer  
 }
 
@@ -233,11 +229,18 @@ void setup(){
 }
 
 void loop(){
-  t_angleVal angleVal = getAngleValue();
+  // get values
+  t_accVal accVal = getAccRawContinue();  // accVal에 함수 거친 것이 저장됨
+  t_gyroVal gyroVal = getGyroRawContinue();
+  t_errVal errVal = calculate_IMU_error();  // TODO: loop에서 여기까지 계속 가져오니까 문제가 생기는 듯
+  Serial.println("Error Value");
+  Serial.println(errVal.GyroErrorX);
+  
+  // calculate roll, pitch, yaw
+  t_angleVal angleVal = calAngleValue(accVal, gyroVal, errVal);
   printAngleVal(angleVal);
   samplingRate();
 }
-
 
 //TODO: low speed and inaccurate value
 //TODO: error value가 갱신됨
